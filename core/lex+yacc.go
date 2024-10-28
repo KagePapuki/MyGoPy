@@ -57,6 +57,7 @@ func (t *Token) Tcontent() string {
 var Command []rune
 var I int
 var Result []*Token
+var Length int
 
 func new_token() *Token {
 	var now_token *Token
@@ -67,14 +68,14 @@ func new_token() *Token {
 	case unicode.IsDigit(ch):
 		now_token = &Token{2, "number " + string(ch)}
 	case ch == '\'':
-		if Command[I+1] == '\'' && Command[I+2] == '\'' {
+		if I+2 < Length && Command[I+1] == '\'' && Command[I+2] == '\'' {
 			I += 2
 			now_token = &Token{2, "string2 "}
 		} else {
 			now_token = &Token{2, "string0 "}
 		}
 	case ch == '"':
-		if Command[I+1] == '"' && Command[I+2] == '"' {
+		if I+2 < Length && Command[I+1] == '"' && Command[I+2] == '"' {
 			I += 2
 			now_token = &Token{2, "string3 "}
 		} else {
@@ -106,12 +107,12 @@ func LexAndYacc(command string) []*Token {
 	var now_token *Token
 	//var indent int = 0
 	Command = []rune(command)
-	length := len(Command)
+	Length = len(Command)
 	I = 0
 	now_token = new_token()
-	I = 1
+	I += 1
 
-	for I < length {
+	for I < Length {
 		ch := Command[I]
 		switch now_token.ttype {
 		case 0:
@@ -136,8 +137,6 @@ func LexAndYacc(command string) []*Token {
 			} else if strings.HasPrefix(now_token.tcontent, "string0 ") {
 				if ch == '\'' && Command[I-1] != '\\' {
 					now_token.tcontent = strings.Replace(now_token.tcontent,"string0 ","string ",1)
-					I += 1
-					now_token = new_token()
 				} else if ch == '\n' {
 					fmt.Println("[Error]Inedex ",I,": missing '")
 					break
@@ -147,8 +146,6 @@ func LexAndYacc(command string) []*Token {
 			} else if strings.HasPrefix(now_token.tcontent, "string1 ") {
 				if ch == '"' && Command[I-1] != '\\' {
 					now_token.tcontent = strings.Replace(now_token.tcontent,"string1 ","string ",1)
-					I += 1
-					now_token = new_token()
 				} else if ch == '\n' {
 					fmt.Println("[Error]Inedex ",I,": missing \"")
 					break
@@ -156,23 +153,21 @@ func LexAndYacc(command string) []*Token {
 					now_token.tcontent += string(ch)
 				}
 			} else if strings.HasPrefix(now_token.tcontent, "string2 ") {
-				if ch == '\'' && Command[I+1] == '\'' && Command[I+2] == '\'' && Command[I-1] != '\\' {
+				if I+2 < Length && ch == '\'' && Command[I+1] == '\'' && Command[I+2] == '\'' && Command[I-1] != '\\' {
 					now_token.tcontent = strings.Replace(now_token.tcontent,"string2 ","string ",1)
 					I += 2
-					I += 1
-					now_token = new_token()
 				} else {
 					now_token.tcontent += string(ch)
 				}
 			} else if strings.HasPrefix(now_token.tcontent, "string3 ") {
-				if ch == '"' && Command[I+1] == '"' && Command[I+2] == '"' && Command[I-1] != '\\' {
+				if I+2 < Length && ch == '"' && Command[I+1] == '"' && Command[I+2] == '"' && Command[I-1] != '\\' {
 					now_token.tcontent = strings.Replace(now_token.tcontent,"string3 ","string ",1)
 					I += 2
-					I += 1
-					now_token = new_token()
 				} else {
 					now_token.tcontent += string(ch)
 				}
+			} else if strings.HasPrefix(now_token.tcontent, "string ") {
+				now_token = new_token()
 			}
 		case 3:
 			if ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '=' || ch == '>' || ch == '<' || ch == '!' || ch == '%' || ch == '&' || ch == '^' || ch == '|' {
