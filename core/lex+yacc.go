@@ -103,6 +103,9 @@ func new_token() *Token {
 }
 
 func LexAndYacc(command string) []*Token {
+	if command == "" {
+		return nil
+	}
 	Result = []*Token{}
 	var now_token *Token
 	//var indent int = 0
