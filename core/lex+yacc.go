@@ -193,5 +193,15 @@ func LexAndYacc(command string) []*Token {
 		}
 		I += 1
 	}
+	
+	for I, now_token = range Result {
+		switch now_token.ttype {
+		case 1:
+			if now_token.tcontent == "False" || now_token.tcontent == "None" || now_token.tcontent == "True" || now_token.tcontent == "and" || now_token.tcontent == "as" || now_token.tcontent == "assert" || now_token.tcontent == "async" || now_token.tcontent == "await" || now_token.tcontent == "break" || now_token.tcontent == "class" || now_token.tcontent == "continue" || now_token.tcontent == "def" || now_token.tcontent == "del" || now_token.tcontent == "elif" || now_token.tcontent == "else" || now_token.tcontent == "except" || now_token.tcontent == "finally" || now_token.tcontent == "for" || now_token.tcontent == "from" || now_token.tcontent == "global" || now_token.tcontent == "if" || now_token.tcontent == "import" || now_token.tcontent == "in" || now_token.tcontent == "is" || now_token.tcontent == "lambda" || now_token.tcontent == "nonlocal" || now_token.tcontent == "not" || now_token.tcontent == "or" || now_token.tcontent == "pass" || now_token.tcontent == "raise" || now_token.tcontent == "return" || now_token.tcontent == "try" || now_token.tcontent == "while" || now_token.tcontent == "with" || now_token.tcontent == "yield" {
+				now_token.ttype = 0
+			}
+		}
+	}
+
 	return Result
 }
