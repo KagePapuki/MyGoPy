@@ -2,8 +2,9 @@ package core
 
 import (
 	"unicode"
-	"fmt"
+	//"fmt"
 	"strings"
+	"strconv"
 )
 
 /*
@@ -18,7 +19,7 @@ import (
 	逻辑运算符：and, or, not
 4 Separator: ( ) [ ] { } : , .
 5 OtherSmbol: COMMENT DECORATOR ELLIPSIS
-6 Syntax: INDENT DEDENT NEWLINE(;) (中间量: TAB SPACE DOT)
+6 Syntax: INDENT DEDENT NEWLINE(;) START END (中间量: TAB SPACE DOT)
 7 Block
 */
 
@@ -46,7 +47,7 @@ func (t *Token) Ttype() string {
 	case 7:
 		return "Block"
 	default:
-		return "Unknown(" + string(t.ttype) + ")"
+		return ("Unknown(" + strconv.Itoa(t.ttype) + ")")
 	}
 }
 
@@ -61,6 +62,7 @@ var Length int
 
 func new_token() *Token {
 	var now_token *Token
+	var add_token bool = true
 	ch := Command[I]
 	switch {
 	case unicode.IsLetter(ch) || ch == '_':
@@ -97,8 +99,17 @@ func new_token() *Token {
 		now_token = &Token{6, "SPACE"}
 	case ch == '.':
 		now_token = &Token{6, "DOT"}
+	case ch == '\\' && I+1 < Length && Command[I+1] == '\n':
+		//now_token = Result[len(Result) - 1]
+		now_token = &Token{8, ""}
+		I += 1
+		add_token = false
+	default:
+		now_token = &Token{8, string(ch)}
 	}
-	Result = append(Result, now_token)
+	if add_token {
+		Result = append(Result, now_token)
+	}
 	return now_token
 }
 
@@ -106,7 +117,7 @@ func LexAndYacc(command string) []*Token {
 	if command == "" {
 		return nil
 	}
-	Result = []*Token{}
+	Result = []*Token{&Token{6, "START"}}
 	var now_token *Token
 	//var indent int = 0
 	Command = []rune(command)
@@ -140,18 +151,16 @@ func LexAndYacc(command string) []*Token {
 			} else if strings.HasPrefix(now_token.tcontent, "string0 ") {
 				if ch == '\'' && Command[I-1] != '\\' {
 					now_token.tcontent = strings.Replace(now_token.tcontent,"string0 ","string ",1)
-				} else if ch == '\n' {
-					fmt.Println("[Error]Inedex ",I,": missing '")
-					break
+				} else if ch == '\\' && Command[I-1] != '\\' && I+1 < Length && Command[I+1] == '\n' {
+					I += 1
 				} else {
 					now_token.tcontent += string(ch)
 				}
 			} else if strings.HasPrefix(now_token.tcontent, "string1 ") {
 				if ch == '"' && Command[I-1] != '\\' {
 					now_token.tcontent = strings.Replace(now_token.tcontent,"string1 ","string ",1)
-				} else if ch == '\n' {
-					fmt.Println("[Error]Inedex ",I,": missing \"")
-					break
+				} else if ch == '\\' && Command[I-1] != '\\' && I+1 < Length && Command[I+1] == '\n' {
+					I += 1
 				} else {
 					now_token.tcontent += string(ch)
 				}
@@ -159,6 +168,8 @@ func LexAndYacc(command string) []*Token {
 				if I+2 < Length && ch == '\'' && Command[I+1] == '\'' && Command[I+2] == '\'' && Command[I-1] != '\\' {
 					now_token.tcontent = strings.Replace(now_token.tcontent,"string2 ","string ",1)
 					I += 2
+				} else if ch == '\\' && Command[I-1] != '\\' && I+1 < Length && Command[I+1] == '\n' {
+					I += 1
 				} else {
 					now_token.tcontent += string(ch)
 				}
@@ -166,6 +177,8 @@ func LexAndYacc(command string) []*Token {
 				if I+2 < Length && ch == '"' && Command[I+1] == '"' && Command[I+2] == '"' && Command[I-1] != '\\' {
 					now_token.tcontent = strings.Replace(now_token.tcontent,"string3 ","string ",1)
 					I += 2
+				} else if ch == '\\' && Command[I-1] != '\\' && I+1 < Length && Command[I+1] == '\n' {
+					I += 1
 				} else {
 					now_token.tcontent += string(ch)
 				}
@@ -190,6 +203,8 @@ func LexAndYacc(command string) []*Token {
 			}
 		case 6:
 			now_token = new_token()
+		default:
+			now_token = new_token()
 		}
 		I += 1
 	}
@@ -203,5 +218,7 @@ func LexAndYacc(command string) []*Token {
 		}
 	}
 
+
+	Result = append(Result, &Token{6, "END"})
 	return Result
 }

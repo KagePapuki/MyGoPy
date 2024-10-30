@@ -44,8 +44,9 @@ func preprocess(command string) {
 			block_code = append(block_code, command)
 		}
 	} else {
-		if strings.HasSuffix(command, ":") {
+		if strings.HasSuffix(command, ":") || strings.HasSuffix(command, "\\") {
 			in_block = true
+			block_code = []string{}
 			block_code = append(block_code, command)
 		} else {
 			process_single(command)
