@@ -113,13 +113,13 @@ func new_token() *Token {
 	return now_token
 }
 
-func LexAndYacc(command string) []*Token {
+func LexAndYacc(command string) ([]*Token, string) {
+	var err string
 	if command == "" {
-		return nil
+		return nil, err
 	}
 	Result = []*Token{&Token{6, "START"}}
 	var now_token *Token
-	//var indent int = 0
 	Command = []rune(command)
 	Length = len(Command)
 	I = 0
@@ -208,17 +208,129 @@ func LexAndYacc(command string) []*Token {
 		}
 		I += 1
 	}
-	
-	for I, now_token = range Result {
+
+	Result = append(Result, &Token{6, "END"})
+
+	var separator int = 0
+	var new_result []*Token
+	var add_token bool = true
+	I = 0
+
+	for I < len(Result) {
+		add_token = true
+		now_token = Result[I]
+
 		switch now_token.ttype {
 		case 1:
 			if now_token.tcontent == "False" || now_token.tcontent == "None" || now_token.tcontent == "True" || now_token.tcontent == "and" || now_token.tcontent == "as" || now_token.tcontent == "assert" || now_token.tcontent == "async" || now_token.tcontent == "await" || now_token.tcontent == "break" || now_token.tcontent == "class" || now_token.tcontent == "continue" || now_token.tcontent == "def" || now_token.tcontent == "del" || now_token.tcontent == "elif" || now_token.tcontent == "else" || now_token.tcontent == "except" || now_token.tcontent == "finally" || now_token.tcontent == "for" || now_token.tcontent == "from" || now_token.tcontent == "global" || now_token.tcontent == "if" || now_token.tcontent == "import" || now_token.tcontent == "in" || now_token.tcontent == "is" || now_token.tcontent == "lambda" || now_token.tcontent == "nonlocal" || now_token.tcontent == "not" || now_token.tcontent == "or" || now_token.tcontent == "pass" || now_token.tcontent == "raise" || now_token.tcontent == "return" || now_token.tcontent == "try" || now_token.tcontent == "while" || now_token.tcontent == "with" || now_token.tcontent == "yield" {
 				now_token.ttype = 0
 			}
+		case 4:
+			if now_token.tcontent == "(" || now_token.tcontent == "[" || now_token.tcontent == "{" {
+				separator += 1
+			} else if now_token.tcontent == ")" || now_token.tcontent == "]" || now_token.tcontent == "}" {
+				separator -= 1
+			}
+		case 5:
+			if now_token.tcontent == "COMMENT" {
+				add_token = false
+			}
+		case 6:
+			if separator > 0 && (now_token.tcontent == "TAB" || now_token.tcontent == "SPACE" || now_token.tcontent == "NEWLINE") {
+				add_token = false
+			} else if now_token.tcontent == "TAB" {
+				now_token = &Token{6, "SPACE"}
+			}
 		}
+
+		if add_token {
+			new_result = append(new_result, now_token)
+		}
+		I += 1
 	}
 
+	if separator != 0 {
+		err = "INCOMPLETE BLOCK"
+	}
 
-	Result = append(Result, &Token{6, "END"})
-	return Result
+	Result = new_result
+
+	new_result = []*Token{&Token{6, "START"}}
+	I = 1
+	var J int = 0
+	var space_num int = 0
+	var indent int = 0
+	var new_indent int = 0
+
+	for I < len(Result) {
+		add_token = true
+		now_token = Result[I]
+
+		switch now_token.ttype {
+		case 6:
+			if space_num == 0 && Result[I-1].tcontent == "NEWLINE" && Result[I-1].ttype == 6 && now_token.tcontent == "SPACE" {
+				J = I + 1
+				add_token = false
+				for J < len(Result) {
+					if Result[J].ttype == 6 && Result[J].tcontent == "SPACE" {
+						J += 1
+					} else if Result[J].ttype == 6 && Result[J].tcontent == "NEWLINE" {
+						I = J
+						break
+					} else {
+						space_num = J - I
+						add_token = true
+						now_token = &Token{6, "INDENT"}
+						indent = 1
+						I = J - 1
+						break
+					}
+				}
+			} else if space_num > 0 && Result[I-1].tcontent == "NEWLINE" && Result[I-1].ttype == 6 && now_token.tcontent == "SPACE" {
+				J = I + 1
+				add_token = false
+				for J < len(Result) {
+					if Result[J].ttype == 6 && Result[J].tcontent == "SPACE" {
+						J += 1
+					} else if Result[J].ttype == 6 && Result[J].tcontent == "NEWLINE" {
+						I = J
+						break
+					} else {
+						if (J - I) % space_num != 0 {
+							err = "INDENT ERROR"
+							I = len(Result)
+							break
+						} else {
+							new_indent = (J - I) / space_num - indent
+							I = J - 1
+							indent += new_indent
+							if new_indent > 0 {
+								for new_indent > 0 {
+									new_result = append(new_result, &Token{6, "INDENT"})
+									new_indent -= 1
+								}
+							} else if new_indent < 0 {
+								for new_indent < 0 {
+									new_result = append(new_result, &Token{6, "DEDENT"})
+									new_indent += 1
+								}
+							}
+						}
+						break
+					}
+				}
+			} else if now_token.tcontent == "SPACE" {
+				add_token = false
+			}
+		}
+
+		if add_token {
+			new_result = append(new_result, now_token)
+		}
+		I += 1
+	}
+
+	Result = new_result
+
+	return Result, err
 }
