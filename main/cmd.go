@@ -14,14 +14,24 @@ var inputs []string
 //Global_map := make(map[string]string)
 //var wg sync.WaitGroup
 var in_block bool = false
+var in_separator_block bool = false
+var in_add_separator_block bool = false
 var block_code []string
 
-func process_single(command string) {
-	fmt.Printf("Processed command: '%s'\n",print_token_slice(core.LexAndYacc(command)))
+func process_single(command string) string {
+	tokens, err := core.LexAndYacc(command)
+	if err == "" {
+		fmt.Printf("Processed command: '%s'\n",print_token_slice(tokens))
+	}
+	return err
 }
 
-func process_block() {
-	fmt.Printf("Processed block: '%s'\n",print_token_slice(core.LexAndYacc(strings.Join(block_code, "\n"))))
+func process_block() string {
+	tokens, err := core.LexAndYacc(strings.Join(block_code, "\n"))
+	if err == "" {
+		fmt.Printf("Processed block: '%s'\n",print_token_slice(tokens))
+	}
+	return err
 }
 
 func print_token_slice(slice []*core.Token) string {
@@ -36,19 +46,63 @@ func print_token_slice(slice []*core.Token) string {
 func preprocess(command string) {
 	inputs = append(inputs, command)
 	if in_block {
-		if command == "" {
-			in_block = false
-			process_block()
-			block_code = make([]string,10)
+		if command == "" && in_separator_block == false {
+			err := process_block()
+			switch err {
+			case "":
+				in_block = false
+				block_code = make([]string,10)
+			case "INCOMPLETE BLOCK":
+				in_separator_block = true
+				in_add_separator_block = true
+				block_code = append(block_code, command)
+			default:
+				in_block = false
+				block_code = make([]string,10)
+				fmt.Println("[Error]" + err)
+			}
+		} else if in_separator_block {
+			block_code = append(block_code, command)
+			err := process_block()
+			switch err {
+			case "":
+				if in_add_separator_block {
+					in_add_separator_block = false
+					in_separator_block = false
+				} else {
+					block_code = make([]string,10)
+					in_separator_block = false
+					in_block = false
+				}
+			case "INCOMPLETE BLOCK":
+				//block_code = append(block_code, command)
+			default:
+				in_add_separator_block = false
+				in_separator_block = false
+				block_code = make([]string,10)
+				fmt.Println("[Error]" + err)
+			}
 		} else {
 			block_code = append(block_code, command)
 		}
 	} else {
-		if strings.HasSuffix(command, ":") {
+		if strings.HasSuffix(command, ":") || strings.HasSuffix(command, "\\") {
 			in_block = true
+			block_code = []string{}
 			block_code = append(block_code, command)
 		} else {
-			process_single(command)
+			err := process_single(command)
+			switch err {
+			case "":
+				//no error
+			case "INCOMPLETE BLOCK":
+				in_block = true
+				in_separator_block = true
+				block_code = []string{}
+				block_code = append(block_code, command)
+			default:
+				fmt.Println("[Error]" + err)
+			}
 		}
 	}
 }
@@ -58,9 +112,9 @@ func handle_input() {
 
 	for true {
 		if in_block {
-			fmt.Printf("...")
+			fmt.Printf("... ")
 		} else {
-			fmt.Printf(">>>")
+			fmt.Printf(">>> ")
 		}
 		command, err := reader.ReadString('\n')
 		if err == nil {
