@@ -7,7 +7,7 @@ import (
 	"log"
 	"strings"
 	//"sync"
-	"github.com/KagePapuki/MyGoPy/core"
+	"github.com/KagePapuki/MyGoPy/decode"
 )
 
 var inputs []string
@@ -19,7 +19,7 @@ var in_add_separator_block bool = false
 var block_code []string
 
 func process_single(command string) string {
-	tokens, err := core.LexAndYacc(command)
+	tokens, err := decode.LexAndYacc(command)
 	if err == "" {
 		fmt.Printf("Processed command: '%s'\n",print_token_slice(tokens))
 	}
@@ -27,14 +27,14 @@ func process_single(command string) string {
 }
 
 func process_block() string {
-	tokens, err := core.LexAndYacc(strings.Join(block_code, "\n"))
+	tokens, err := decode.LexAndYacc(strings.Join(block_code, "\n"))
 	if err == "" {
 		fmt.Printf("Processed block: '%s'\n",print_token_slice(tokens))
 	}
 	return err
 }
 
-func print_token_slice(slice []*core.Token) string {
+func print_token_slice(slice []*decode.Token) string {
 	var result string = "["
 	for _, token := range slice {
 		result += (token.Ttype() + ": \"" + token.Tcontent() + "\", ")
