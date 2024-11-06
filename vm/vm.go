@@ -1,7 +1,8 @@
 package vm
 
 import (
-	"github.com/KagePapuki/MyGoPy/decode"
+	"github.com/KagePapuki/MyGoPy/decode",
+	"os"
 )
 
 var Path string
@@ -10,10 +11,14 @@ var Address map[string]string
 var pointer int
 
 func init(p string) string {
-	Path = p
-	Mem = []string{}
-	Address = map[string]string{}
-	return "Succeed"
+	_, err := os.Stat(p)
+    if err == nil {
+		Path = p
+		Mem = []string{}
+		Address = map[string]string{}
+		return "Succeed"
+	}
+	return "Error"
 }
 
 func run(command []*decode.Token) string {
