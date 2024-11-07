@@ -17,9 +17,9 @@ import (
 	位运算符：&, |, ^, <<, >>
 	赋值运算符：=, +=, -=, *=, /=, %=, &=, |=, ^=, <<=, >>=, **=
 	逻辑运算符：and, or, not
-4 Separator: ( ) [ ] { } : , .
+4 Separator: ( ) [ ] { } : ,
 5 OtherSmbol: COMMENT DECORATOR ELLIPSIS
-6 Syntax: INDENT DEDENT NEWLINE(;) START END (中间量: TAB SPACE DOT)
+6 Syntax: INDENT DEDENT NEWLINE(;) START END DOT (中间量: TAB SPACE)
 7 Block
 */
 
@@ -49,10 +49,6 @@ func (t *Token) Ttype() string {
 	default:
 		return ("Unknown(" + strconv.Itoa(t.ttype) + ")")
 	}
-}
-
-func (t *Token) Trawtype() int {
-    return t.ttype
 }
 
 func (t *Token) Tcontent() string {
