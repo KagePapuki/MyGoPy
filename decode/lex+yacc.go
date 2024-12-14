@@ -120,7 +120,7 @@ func LexAndYacc(command string) ([]*Token, string) {
 	}
 	Result = []*Token{&Token{6, "START"}}
 	var now_token *Token
-	Command = []rune(command)
+	Command = []rune(strings.Replace(command, "\r", "", -1))
 	Length = len(Command)
 	I = 0
 	now_token = new_token()

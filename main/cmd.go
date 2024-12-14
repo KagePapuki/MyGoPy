@@ -6,6 +6,7 @@ import (
 	"os"
 	"log"
 	"strings"
+	"path/filepath"
 	//"sync"
 	"github.com/KagePapuki/MyGoPy/decode"
 )
@@ -136,6 +137,33 @@ func handle_input() {
 }
 
 func main() {
-	fmt.Println("MyGoPy 0.1.0\na Python interpreter based on Golang\nGithub: https://github.com/KagePapuki/MyGoPy")
-	handle_input()
+	work_dir, err := os.Getwd()
+	if err != nil {
+		fmt.Println("[InitError] ", err)
+		return
+	}
+
+	if len(os.Args) == 1 {
+		fmt.Println("MyGoPy 0.1.0\na Python interpreter based on Golang\nGithub: https://github.com/KagePapuki/MyGoPy")
+		handle_input()
+	} else {
+		file_path := os.Args[len(os.Args)-1]
+		if filepath.IsAbs(file_path) == false {
+			file_path = filepath.Join(work_dir, file_path)
+		}
+
+		data, err := os.ReadFile(file_path)
+		if err != nil {
+			fmt.Printf("[InitError] No such file: %v", file_path)
+			return
+		}
+
+		tokens, serr := decode.LexAndYacc(string(data))
+		if serr != "" {
+			fmt.Printf("[LexError] %s", serr)
+			return
+		}
+
+		fmt.Printf("[Debug] Tokens: %s\n", print_token_slice(tokens))
+	}
 }
