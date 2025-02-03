@@ -266,62 +266,60 @@ func LexAndYacc(command string) ([]*Token, string) {
 		add_token = true
 		now_token = Result[I]
 
-		switch now_token.ttype {
-		case 6:
-			if space_num == 0 && Result[I-1].tcontent == "NEWLINE" && Result[I-1].ttype == 6 && now_token.tcontent == "SPACE" {
-				J = I + 1
-				add_token = false
-				for J < len(Result) {
-					if Result[J].ttype == 6 && Result[J].tcontent == "SPACE" {
-						J += 1
-					} else if Result[J].ttype == 6 && Result[J].tcontent == "NEWLINE" {
-						I = J
-						break
-					} else {
-						space_num = J - I
-						add_token = true
-						now_token = &Token{6, "INDENT"}
-						indent = 1
-						I = J - 1
-						break
-					}
+		if space_num == 0 && Result[I-1].tcontent == "NEWLINE" && Result[I-1].ttype == 6 && now_token.tcontent == "SPACE" && now_token.ttype == 6 {
+			J = I + 1
+			add_token = false
+			for J < len(Result) {
+				if Result[J].ttype == 6 && Result[J].tcontent == "SPACE" {
+					J += 1
+				} else if Result[J].ttype == 6 && Result[J].tcontent == "NEWLINE" {
+					I = J
+					break
+				} else {
+					space_num = J - I
+					add_token = true
+					now_token = &Token{6, "INDENT"}
+					indent = 1
+					I = J - 1
+					break
 				}
-			} else if space_num > 0 && Result[I-1].tcontent == "NEWLINE" && Result[I-1].ttype == 6 && now_token.tcontent == "SPACE" {
-				J = I + 1
-				add_token = false
-				for J < len(Result) {
-					if Result[J].ttype == 6 && Result[J].tcontent == "SPACE" {
-						J += 1
-					} else if Result[J].ttype == 6 && Result[J].tcontent == "NEWLINE" {
-						I = J
+			}
+		} else if space_num > 0 && Result[I-1].tcontent == "NEWLINE" && Result[I-1].ttype == 6 {
+			J = I
+			add_token = false
+			for J < len(Result) {
+				if Result[J].ttype == 6 && Result[J].tcontent == "SPACE" {
+					J += 1
+				} else if Result[J].ttype == 6 && Result[J].tcontent == "NEWLINE" {
+					I = J
+					break
+				} else {
+					if (J - I) % space_num != 0 {
+						err = "INDENT ERROR"
+						I = len(Result)
 						break
 					} else {
-						if (J - I) % space_num != 0 {
-							err = "INDENT ERROR"
-							I = len(Result)
-							break
-						} else {
-							new_indent = (J - I) / space_num - indent
-							I = J - 1
-							indent += new_indent
-							if new_indent > 0 {
-								for new_indent > 0 {
-									new_result = append(new_result, &Token{6, "INDENT"})
-									new_indent -= 1
-								}
-							} else if new_indent < 0 {
-								for new_indent < 0 {
-									new_result = append(new_result, &Token{6, "DEDENT"})
-									new_indent += 1
-								}
+						new_indent = (J - I) / space_num - indent
+						I = J - 1
+						Result[I] = &Token{6, "PASSED"}
+						indent += new_indent
+						if new_indent > 0 {
+							for new_indent > 0 {
+								new_result = append(new_result, &Token{6, "INDENT"})
+								new_indent -= 1
+							}
+						} else if new_indent < 0 {
+							for new_indent < 0 {
+								new_result = append(new_result, &Token{6, "DEDENT"})
+								new_indent += 1
 							}
 						}
-						break
 					}
+					break
 				}
-			} else if now_token.tcontent == "SPACE" {
-				add_token = false
 			}
+		} else if now_token.tcontent == "SPACE" {
+			add_token = false
 		}
 
 		if add_token {
